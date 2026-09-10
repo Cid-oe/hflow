@@ -206,7 +206,8 @@ def test_many_stops_scheduling_new_episodes_after_preparation_failure(
             stages=(hflow.Stage.SYNC,),
         )
 
-    test_run_directories = tuple(application.workspace.test_runs_root.workspace.iterdir())
+    test_run_dir = application.workspace.test_runs_root.workspace
+    test_run_directories = tuple(test_run_dir.iterdir()) if test_run_dir.exists() else ()
     assert not any(
         run_directory.name.startswith(f"{source_that_must_not_start.stem}-")
         for run_directory in test_run_directories

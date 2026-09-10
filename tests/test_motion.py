@@ -360,7 +360,7 @@ def test_camera_stability_refuses_invalid_tuning_knobs_early(
     dummy_episode = object()  # Not even an Episode instance; fails before touching it
     pattern = rf"^{arg_name} must be finite and non-negative$"
     with pytest.raises(ValueError, match=pattern):
-        camera_stability(dummy_episode, **{arg_name: bad_value})  # type: ignore[arg-type]
+        camera_stability(dummy_episode, **{arg_name: bad_value})  # type: ignore[arg-type]  # ty: ignore
 
 
 # ``luma_frames`` itself is tested in tests/test_ffmpeg.py, beside the other

@@ -83,11 +83,11 @@ class _CatalogUiSession:
     refreshed: Condition = field(default_factory=Condition)
 
     def started_connection(self) -> duckdb.DuckDBPyConnection:
-        """Wait for the server and the first catalog read, then its one connection."""
+        """Read through a separate cursor while the UI thread polls its connection."""
         assert self.server_started.wait(timeout=2)
         assert self.initial_catalog_read.wait(timeout=2)
         (catalog_connection,) = self.catalog_connections
-        return catalog_connection
+        return catalog_connection.cursor()
 
     def wait_for_refreshes(self, count: int) -> bool:
         with self.refreshed:

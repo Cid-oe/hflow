@@ -78,6 +78,7 @@ dev = [
     "opencv-python-headless>=5.0.0.93",
     "pyarrow>=25.0.1", # the arrow extra, present in dev so the suite tests it
     "pytest>=9.1.1",
+    "pytest-xdist>=3.8.0",
     "pyyaml>=6.0.3",
     "ruff>=0.16.4",
     "setuptools>=84.0.0", # the native-build extra's extension builder

@@ -116,6 +116,9 @@ uv run --python 3.11 --locked pytest -q
 uv run --python 3.14 --locked pytest -q
 ```
 
+CI uses four pytest workers for the default suite. To match its test execution
+locally, run `uv run pytest -q -n 4`.
+
 Four integration test suites are intentionally opt-in because they need network
 access, Docker, a writable object-store prefix, or a model outside the default
 environment:

@@ -61,7 +61,9 @@ async def run_blocking_with_cancel_hook(
         raise
 
 
-async def _run_cancel_hook_to_completion(cancel_hook: Callable[[], Awaitable[object]]) -> None:
+async def _run_cancel_hook_to_completion(
+    cancel_hook: Callable[[], Awaitable[object]],
+) -> None:
     async def invoke_cancel_hook() -> None:
         # Calling the hook inside the task keeps a synchronous failure before
         # its awaitable exists from skipping the caller's drain.
@@ -143,6 +145,8 @@ class PrefetchedItems(Generic[_Item, _Prepared]):
                 released_directory = self._current.directory
                 self._current = None
                 await run_blocking(_remove_directory, released_directory)
+            if self._release_task is not None:
+                raise StopAsyncIteration
             # Start the requested item only if lookahead has not already; this
             # keeps at most max(lookahead, 1) preparations running at once.
             self._start_preparations_until(max(self._lookahead, 1))
@@ -151,7 +155,17 @@ class PrefetchedItems(Generic[_Item, _Prepared]):
             pending = self._pending[0]
             # Shielded: cancelling the caller must not cancel a preparation
             # whose thread may still write into its directory. aclose drains it.
-            prepared_value = await asyncio.shield(pending.task)
+            try:
+                prepared_value = await asyncio.shield(pending.task)
+            except BaseException:
+                if self._release_task is not None:
+                    raise StopAsyncIteration from None
+                if pending.task.done() and not pending.task.cancelled():
+                    self._pending.popleft()
+                    await run_blocking(_remove_directory, pending.directory)
+                raise
+            if self._release_task is not None:
+                raise StopAsyncIteration
             self._pending.popleft()
             self._current = PrefetchedItem(pending.item, prepared_value, pending.directory)
             # Background preparation continues while the caller uses this item.
@@ -161,6 +175,8 @@ class PrefetchedItems(Generic[_Item, _Prepared]):
             self._consumer_waiting = False
 
     def _start_preparations_until(self, pending_limit: int) -> None:
+        if self._release_task is not None:
+            return
         while len(self._pending) < pending_limit:
             next_item = next(self._remaining_items, _NO_MORE_ITEMS)
             if next_item is _NO_MORE_ITEMS:

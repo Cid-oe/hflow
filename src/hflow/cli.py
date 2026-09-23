@@ -546,6 +546,12 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     package_build_parser.add_argument(
+        "--jobs",
+        type=int,
+        default=1,
+        help="parallel Cython and compiler jobs (default: 1)",
+    )
+    package_build_parser.add_argument(
         "--output-dir",
         type=Path,
         required=True,
@@ -1037,6 +1043,7 @@ def _command_package(arguments: argparse.Namespace) -> int:
                         if arguments.module_names is not None
                         else None
                     ),
+                    jobs=arguments.jobs,
                 ),
                 arguments.output_dir,
             )

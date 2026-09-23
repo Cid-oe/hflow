@@ -407,23 +407,26 @@ def test_verification_reports_a_final_wheel_record_that_lost_native_ownership(
 
 def test_build_is_reproducible_across_output_directories(tmp_path: Path) -> None:
     package_root, _ = write_example_distribution(tmp_path)
-    build_config = CythonOverlayBuildConfig(
-        package_root=package_root,
-        module_names=("sample_native_package.worker",),
-    )
 
     first_overlay_directory = tmp_path / "first-overlay"
     second_overlay_directory = tmp_path / "second-overlay"
-    first_manifest = build_cython_overlay(build_config, first_overlay_directory)
-    second_manifest = build_cython_overlay(build_config, second_overlay_directory)
+    first_manifest = build_cython_overlay(
+        CythonOverlayBuildConfig(package_root=package_root, jobs=1),
+        first_overlay_directory,
+    )
+    second_manifest = build_cython_overlay(
+        CythonOverlayBuildConfig(package_root=package_root, jobs=4),
+        second_overlay_directory,
+    )
 
     assert first_manifest == second_manifest
     assert (first_overlay_directory / CYTHON_OVERLAY_MANIFEST_FILE_NAME).read_bytes() == (
         second_overlay_directory / CYTHON_OVERLAY_MANIFEST_FILE_NAME
     ).read_bytes()
-    assert (first_overlay_directory / first_manifest.artifacts[0].artifact_path).read_bytes() == (
-        second_overlay_directory / second_manifest.artifacts[0].artifact_path
-    ).read_bytes()
+    for artifact in first_manifest.artifacts:
+        assert (first_overlay_directory / artifact.artifact_path).read_bytes() == (
+            second_overlay_directory / artifact.artifact_path
+        ).read_bytes()
 
 
 def test_verification_rejects_an_unrecorded_directory(tmp_path: Path) -> None:

@@ -2814,8 +2814,11 @@ class App:
                         f"{_sanitize_topic(enrichment_run.enrichment.name)}-"
                         f"{enrichment_run.enrichment.version}"
                     )
-                    with open(resolved_artifact_path, "rb") as f:
-                        file_digest = hashlib.file_digest(f, "sha256").hexdigest()[:8]
+                    try:
+                        with open(resolved_artifact_path, "rb") as f:
+                            file_digest = hashlib.file_digest(f, "sha256").hexdigest()[:8]
+                    except FileNotFoundError:
+                        file_digest = hashlib.sha256(artifact_name.encode()).hexdigest()[:8]
                     artifact_key = (
                         f"artifacts/{step_directory}/{_sanitize_topic(artifact_name)}-"
                         f"{file_digest}/{artifact_path.name}"

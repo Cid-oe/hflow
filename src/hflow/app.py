@@ -2806,16 +2806,19 @@ class App:
                 resolved_artifact_path = artifact_path.resolve()
                 try:
                     artifact_relative_path = resolved_artifact_path.relative_to(run_dir.resolve())
+                    if artifact_relative_path.parts[0] == "scratch":
+                        raise ValueError("Scratch files must be staged outside scratch")
                     artifact_key = artifact_relative_path.as_posix()
                 except ValueError:
                     step_directory = (
                         f"{_sanitize_topic(enrichment_run.enrichment.name)}-"
                         f"{enrichment_run.enrichment.version}"
                     )
-                    artifact_name_digest = hashlib.sha256(artifact_name.encode()).hexdigest()[:8]
+                    with open(resolved_artifact_path, "rb") as f:
+                        file_digest = hashlib.file_digest(f, "sha256").hexdigest()[:8]
                     artifact_key = (
                         f"artifacts/{step_directory}/{_sanitize_topic(artifact_name)}-"
-                        f"{artifact_name_digest}/{artifact_path.name}"
+                        f"{file_digest}/{artifact_path.name}"
                     )
                 try:
                     enrichment_run.artifact_uris[artifact_name] = run_storage_root.publish(
